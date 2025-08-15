@@ -1,34 +1,64 @@
-import requests
-import json
+"""Simple script to fetch data from the MoySklad API."""
 
-token = 'TOKEN'
-headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
+from typing import Any, Dict, Optional
+
+import json
+import requests
+
+
+token = "TOKEN"
+headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 params = {
-    'stockType': 'quantity',
-    'include': 'zeroLines',
+    "stockType": "quantity",
+    "include": "zeroLines",
 }
 
-#получение каталога
-response = requests.get('https://online.moysklad.ru/api/remap/1.2/entity/assortment', headers=headers)
-result = response.json()
 
-with open('catalog.json', 'w', encoding='utf-8') as f:
-    json.dump(result, f, ensure_ascii=False, indent=4)
-print("catalog json data saved as a file")
+def get_json(
+    url: str,
+    *,
+    headers: Optional[Dict[str, str]] = None,
+    params: Optional[Dict[str, str]] = None,
+) -> Any:
+    """Fetch JSON from URL and raise for HTTP errors."""
 
-#получение остатков
-response = requests.get('https://online.moysklad.ru/api/remap/1.2/report/stock/all/current', params=params, headers=headers)
-result = response.json()
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+    return response.json()
 
-with open('stock.json', 'w', encoding='utf-8') as f:
-    json.dump(result, f, ensure_ascii=False, indent=4)
-print("stock json data saved as a file")
 
-#получение оборота по товарам
-response = requests.get('https://online.moysklad.ru/api/remap/1.2/report/turnover/all', headers=headers)
-result = response.json()
+def save_json(filename: str, data: Any) -> None:
+    """Save JSON data to ``filename`` using UTF-8 encoding."""
 
-with open('turnover.json', 'w', encoding='utf-8') as f:
-    json.dump(result, f, ensure_ascii=False, indent=4)
-print('turnover json data saved as a file')
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+
+def main() -> None:
+    # получение каталога
+    catalog = get_json(
+        "https://online.moysklad.ru/api/remap/1.2/entity/assortment", headers=headers
+    )
+    save_json("catalog.json", catalog)
+    print("catalog json data saved as a file")
+
+    # получение остатков
+    stock = get_json(
+        "https://online.moysklad.ru/api/remap/1.2/report/stock/all/current",
+        headers=headers,
+        params=params,
+    )
+    save_json("stock.json", stock)
+    print("stock json data saved as a file")
+
+    # получение оборота по товарам
+    turnover = get_json(
+        "https://online.moysklad.ru/api/remap/1.2/report/turnover/all", headers=headers
+    )
+    save_json("turnover.json", turnover)
+    print("turnover json data saved as a file")
+
+
+if __name__ == "__main__":
+    main()
 
